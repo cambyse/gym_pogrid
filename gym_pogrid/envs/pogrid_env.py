@@ -26,21 +26,17 @@ class gameOb():
         
 class PoGrid(gym.Env):
     def __init__(self):
-        self.action_space = spaces.Discrete(4)
-        partial = False
-        size = 5
-        output_size = 84
-
-        self.sizeX = size
-        self.sizeY = size
+        self.sizeX = 5
+        self.sizeY = 5
         self.actions = 4
+        self.action_space = spaces.Discrete(self.actions )
         self.objects = []
-        self.partial = partial
-        self.output_size = output_size
+        self.partial = False
+        self.output_size = 84
         
         a = self.reset()
 
-        self.screen = pygame.display.set_mode((output_size, output_size))
+        self.screen = pygame.display.set_mode((self.output_size, self.output_size))
 
     def step(self,action):
         penalty = self.moveChar(action)
@@ -78,7 +74,7 @@ class PoGrid(gym.Env):
         observation = self.renderEnv()
         rgb_obs = (observation*255).astype("uint8")
         #print(rgb_obs.flatten())
-        image = pygame.image.frombuffer(rgb_obs.flatten(), ( 84, 84 ), 'RGB')
+        image = pygame.image.frombuffer(rgb_obs.flatten(), ( self.output_size, self.output_size ), 'RGB')
         self.screen.blit(image, (0,0))
         pygame.display.flip()
 
