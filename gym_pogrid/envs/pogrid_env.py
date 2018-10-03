@@ -9,7 +9,7 @@ import math
 from numpy import linalg
 import pygame 
 
-pygame.init()
+#pygame.init()
 
 REWARD_STEP = 0.0
 REWARD_FIRE = -1.0
@@ -45,7 +45,7 @@ class PoGrid(gym.Env):
         
         a = self.reset()
 
-        self.screen = pygame.display.set_mode((self.output_size, self.output_size))
+#        self.screen = pygame.display.set_mode((self.output_size, self.output_size))
 
     def step(self,action):
         self.moveChar(action)
