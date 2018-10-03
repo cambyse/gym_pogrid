@@ -3,7 +3,7 @@ import gym_pogrid
 import numpy as np
 import gym
 
-env = gym.make('pogrid-v0')
+env = gym.make('pogrid-fo-84-v0')
 for i_episode in range(20):
     observation = env.reset()
     for t in range(100):

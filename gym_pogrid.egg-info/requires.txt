@@ -1,0 +1,4 @@
+gym
+pygame
+scikit-image
+matplotlib

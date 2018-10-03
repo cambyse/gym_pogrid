@@ -11,6 +11,12 @@ import pygame
 
 pygame.init()
 
+REWARD_STEP = 0.0
+REWARD_FIRE = -1.0
+REWARD_COIN = 1.0
+COIN = 'coin'
+FIRE = 'fire'
+
 class gameOb():
     def __init__(self,coordinates,size,intensity,channel,reward,name):
         metadata = {'render.modes': ['human']}
@@ -22,53 +28,43 @@ class gameOb():
         self.reward = reward
         self.name = name
         self.action_space_n = 4
-
         
 class PoGrid(gym.Env):
-    def __init__(self):
+    def __init__(self, output_size, partial):
         self.sizeX = 5
         self.sizeY = 5
         self.actions = 4
-        self.action_space = spaces.Discrete(self.actions )
+        
         self.objects = []
-        self.partial = False
-        self.output_size = 84
+        self.partial = partial #False
+        self.output_size = output_size #84
+
+        self.action_space = spaces.Discrete(self.actions)
+        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(self.output_size, self.output_size, 3),
+                                                dtype=np.float32)
         
         a = self.reset()
 
         self.screen = pygame.display.set_mode((self.output_size, self.output_size))
 
     def step(self,action):
-        penalty = self.moveChar(action)
+        self.moveChar(action)
         reward,done = self.checkGoal()
         state = self.renderEnv()
-        if reward == None:
-            print(done)
-            print(reward)
-            print(penalty)
-            return state,(reward+penalty),done, None
-        else:
-            return state,(reward+penalty),done, None
+        return state,reward,done, None
         
     def reset(self):
         self.objects = []
         hero = gameOb(self.newPosition(),1,1,2,None,'hero')
         self.objects.append(hero)
-        bug = gameOb(self.newPosition(),1,1,1,1,'goal')
-        self.objects.append(bug)
-        hole = gameOb(self.newPosition(),1,1,0,-1,'fire')
-        self.objects.append(hole)
-        bug2 = gameOb(self.newPosition(),1,1,1,1,'goal')
-        self.objects.append(bug2)
-        hole2 = gameOb(self.newPosition(),1,1,0,-1,'fire')
-        self.objects.append(hole2)
-        bug3 = gameOb(self.newPosition(),1,1,1,1,'goal')
-        self.objects.append(bug3)
-        hole3 = gameOb(self.newPosition(),1,1,0,-1,'fire')
-        self.objects.append(hole3)
-        state = self.renderEnv()
-        self.state = state
-        return state
+        self.objects.append(gameOb(self.newPosition(),1,1,1, REWARD_COIN,COIN))
+        self.objects.append(gameOb(self.newPosition(),1,1,0, REWARD_FIRE,FIRE))
+        self.objects.append(gameOb(self.newPosition(),1,1,1, REWARD_COIN,COIN))
+        self.objects.append(gameOb(self.newPosition(),1,1,0, REWARD_FIRE,FIRE))
+        self.objects.append(gameOb(self.newPosition(),1,1,1, REWARD_COIN,COIN))
+        self.objects.append(gameOb(self.newPosition(),1,1,0, REWARD_FIRE,FIRE))
+        self.state = self.renderEnv()
+        return self.state
 
     def render(self, mode='human', close=False):
         observation = self.renderEnv()
@@ -101,9 +97,6 @@ class PoGrid(gym.Env):
     def moveChar(self,direction):
         # 0 - up, 1 - down, 2 - left, 3 - right
         hero = self.objects[0]
-        heroX = hero.x
-        heroY = hero.y
-        penalize = 0.
         if direction == 0 and hero.y >= 1:
             hero.y -= 1
         if direction == 1 and hero.y <= self.sizeY-2:
@@ -112,10 +105,10 @@ class PoGrid(gym.Env):
             hero.x -= 1
         if direction == 3 and hero.x <= self.sizeX-2:
             hero.x += 1     
-        if hero.x == heroX and hero.y == heroY:
-            penalize = 0.0
+        #if hero.x == heroX and hero.y == heroY:
+        #    penalize = 0.0
         self.objects[0] = hero
-        return penalize
+        return
     
     def newPosition(self):
         iterables = [ range(self.sizeX), range(self.sizeY)]
@@ -132,26 +125,28 @@ class PoGrid(gym.Env):
         return points[location]
 
     def checkGoal(self):
-        others = []
-        nBugs = 0
+        nRemainingCoins = 0
+        ended = False
+
         for obj in self.objects:
-            if obj.name == 'goal':
-                nBugs+=1
+            if obj.name == COIN:
+                nRemainingCoins+=1
             if obj.name == 'hero':
                 hero = obj
-            else:
-                others.append(obj)
-        ended = False
-        for other in others:
-            if hero.x == other.x and hero.y == other.y:
-                if other.reward == 1:
-                    self.objects.remove(other)
-                    nBugs-=1
-                #if nBugs == 0:
-                #    ended = True
-                return other.reward,ended
+
+        # return early when we encounter an object
+        for obj in self.objects[1:]:
+            if hero.x == obj.x and hero.y == obj.y:
+                if obj.reward == 1:
+                    self.objects.remove(obj)
+                    nRemainingCoins-=1
+                if nRemainingCoins == 0:
+                    ended = True
+                return obj.reward,ended
+
+        # simple small negative reward otherwise
         if ended == False:
-            return 0.0,False
+            return REWARD_STEP,False
 
     def getHero(self):
         for item in self.objects:
@@ -185,6 +180,12 @@ class PoGrid(gym.Env):
                    return False
         return True
                 
+class PoGridFO84(PoGrid):
+    def __init__(self):
+        PoGrid.__init__(self,84, False)
 
+class PoGridFO42(PoGrid):
+    def __init__(self):
+        PoGrid.__init__(self,42, False)
     
 
