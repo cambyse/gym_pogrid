@@ -9,9 +9,7 @@ import math
 from numpy import linalg
 import pygame 
 
-#pygame.init()
-
-REWARD_STEP = 0.0
+REWARD_STEP = -0.1
 REWARD_FIRE = -1.0
 REWARD_COIN = 1.0
 COIN = 'coin'
@@ -42,10 +40,8 @@ class PoGrid(gym.Env):
         self.action_space = spaces.Discrete(self.actions)
         self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(self.output_size, self.output_size, 3),
                                                 dtype=np.float32)
-        
+        self.pygame_initialized = False
         a = self.reset()
-
-#        self.screen = pygame.display.set_mode((self.output_size, self.output_size))
 
     def step(self,action):
         self.moveChar(action)
@@ -67,6 +63,11 @@ class PoGrid(gym.Env):
         return self.state
 
     def render(self, mode='human', close=False):
+        if not self.pygame_initialized:
+            pygame.init()
+            self.screen = pygame.display.set_mode((self.output_size, self.output_size))
+            self.pygame_initialized = True
+
         observation = self.renderEnv()
         rgb_obs = (observation*255).astype("uint8")
         #print(rgb_obs.flatten())
